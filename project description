@@ -1,0 +1,491 @@
+SunSafe: UV Exposure Tracker
+Android Application Development Documentation
+Author: TAMBI EMMANUEL TAMBI
+Matricule: ICTU20233726
+Date: Tuesday 24th February 2026
+Course: Android Application Development
+
+Table of Contents
+Executive Summary
+
+Problem Statement
+
+Project Objectives
+
+Target Audience
+
+Sensor Utilization
+
+Core Features
+
+Technical Architecture
+
+Technology Stack
+
+Database Design
+
+User Interface Design
+
+Implementation Timeline
+
+Testing Strategy
+
+Constraints & Limitations
+
+Future Enhancements
+
+Conclusion
+
+References
+
+1. Executive Summary
+SunSafe is an Android-based health application designed to address the growing global concern of overexposure to ultraviolet (UV) radiation. Skin cancer rates have risen dramatically worldwide, with the World Health Organization reporting that 1 in 3 cancers diagnosed is skin cancer. Most cases are preventable through proper sun protection habits.
+
+SunSafe leverages built-in smartphone sensors—specifically the ambient light sensor and GPS—combined with external weather APIs to provide users with personalized, real-time UV exposure tracking. The app calculates safe sun exposure times based on skin type, location, and current UV index, then alerts users when they approach their limit.
+
+Unlike existing weather apps that only display a UV number, SunSafe provides actionable, personalized recommendations and maintains a historical record of sun exposure for long-term health monitoring.
+
+2. Problem Statement
+The Current Situation
+Lack of Awareness: Most people check weather forecasts for temperature and rain but ignore UV index data.
+
+Generic Advice: Existing apps provide a UV number but don't translate it into personalized safe exposure times.
+
+Forgetfulness: People intend to apply sunscreen but forget, especially during prolonged outdoor activities.
+
+Health Consequences: Overexposure leads to sunburn, premature aging, and increased skin cancer risk.
+
+Vitamin D Dilemma: People either avoid sun completely (risking deficiency) or overexpose (risking skin damage).
+
+The Gap
+There is no simple, automated tool that:
+
+Tracks how long you've actually been in the sun.
+
+Compares it against your personal safe limit.
+
+Reminds you to reapply sunscreen.
+
+Helps you balance sun protection with vitamin D needs.
+
+SunSafe fills this gap using sensors already in your pocket.
+
+3. Project Objectives
+Primary Objectives
+Automate Sun Exposure Tracking: Use the ambient light sensor to detect when the user is in direct sunlight and for how long.
+
+Personalize Safe Limits: Calculate individualized safe exposure times based on skin type (Fitzpatrick scale), UV index, and sunscreen use.
+
+Provide Proactive Alerts: Notify users before they reach their limit and remind them to reapply sunscreen.
+
+Educate Users: Display UV index in an understandable format (Low, Moderate, High, Very High, Extreme).
+
+Secondary Objectives
+Vitamin D Optimization: Suggest optimal sun time for vitamin D synthesis based on skin type and location.
+
+Historical Tracking: Maintain exposure history for health trend analysis.
+
+Report Generation: Export PDF summaries for dermatologist consultations.
+
+Community Heatmap: (Optional) Show UV intensity across different locations anonymously.
+
+4. Target Audience
+User Segment	Characteristics	Needs
+Outdoor Workers	Construction, farming, delivery personnel	Long-term exposure tracking; burn prevention
+Parents	Monitoring children's outdoor play	Simple alerts; child profiles
+Fitness Enthusiasts	Runners, cyclists, swimmers	Real-time tracking during workouts
+Fair-Skinned Individuals	High burn risk (Fitzpatrick Type I-II)	Strict limit enforcement
+Vitamin D Deficient	Medical need for controlled exposure	Balanced recommendations
+Travelers	Visiting high-UV locations (beaches, mountains)	Location-based adaptation
+Dermatology Patients	Under doctor's care	Detailed history for medical review
+5. Sensor Utilization
+SunSafe leverages three key smartphone sensors plus external APIs:
+
+5.1 Ambient Light Sensor
+Purpose: Detect sunlight exposure intensity and duration.
+
+How it works: Measures illuminance in lux. Direct sunlight typically reads 30,000-100,000+ lux.
+
+Implementation:
+
+Continuous background monitoring (with user permission).
+
+Compares readings against threshold to determine "in sun" vs. "in shade/indoors."
+
+Accumulates time when lux > 10,000 (configurable).
+
+Challenges: Sensor placement (phone in pocket vs. in hand). Mitigation: User can manually log or use smartwatch companion.
+
+5.2 GPS (Global Positioning System)
+Purpose: Determine user location to fetch local UV index.
+
+How it works: Uses network location (low power) for regular updates; GPS (high accuracy) when app active.
+
+Implementation:
+
+Gets latitude/longitude coordinates.
+
+Sends location to UV API (OpenUV, OpenWeatherMap, etc.).
+
+Caches UV data for current location to minimize API calls.
+
+Privacy: Location data never leaves device unencrypted; anonymized if used for community features.
+
+5.3 Camera (Optional)
+Purpose: Skin self-assessment and sunscreen reminder photos.
+
+Implementation:
+
+Users can photograph skin spots for tracking changes over time.
+
+Photos stored locally with optional cloud backup (encrypted).
+
+Used for "sunscreen check" – photo of applied sunscreen to confirm usage.
+
+5.4 Accelerometer (Supporting)
+Purpose: Detect outdoor activity context.
+
+Implementation:
+
+Differentiates between stationary (lying on beach) vs. moving (walking).
+
+Adjusts exposure calculation based on activity level (moving = more exposure due to angle changes).
+
+6. Core Features
+6.1 Automatic Exposure Tracking
+Background monitoring using ambient light sensor.
+
+Daily exposure timeline showing when and where sun exposure occurred.
+
+Manual override option for times when phone isn't with user.
+
+6.2 Personalized Safe Limit Calculator
+Input: Fitzpatrick skin type (I-VI), sunscreen SPF, application frequency.
+
+Output: Maximum safe minutes before burning at current UV index.
+
+Dynamic adjustment as UV index changes throughout the day.
+
+6.3 Smart Alerts & Reminders
+Pre-Exposure: "UV index is High today. Apply SPF 30+ before going out."
+
+Limit Warning: "You've reached 80% of your safe limit. Reapply sunscreen or seek shade."
+
+Reapplication: "2 hours since last application. Time to reapply!"
+
+After-Sun Care: "You exceeded your limit today. Apply soothing after-sun lotion."
+
+6.4 Vitamin D Optimizer
+Calculates optimal sun time for vitamin D synthesis based on:
+
+Skin type (darker skin requires longer exposure).
+
+UV index (too high = burn risk, too low = no vitamin D production).
+
+Time of day (best between 10 AM - 3 PM).
+
+Balances burn prevention with vitamin D needs.
+
+6.5 Historical Trends & Analytics
+Daily, weekly, monthly exposure summaries.
+
+Heat map calendar showing high-exposure days.
+
+Correlation with sunburn incidents (user-reported).
+
+Long-term skin health trends.
+
+6.6 Location-Based UV Forecasting
+5-day UV forecast for current location.
+
+Search UV forecast for travel destinations.
+
+Peak UV hours highlighted daily.
+
+6.7 PDF Report Generation
+Export dermatologist-friendly report including:
+
+Exposure history (last 30/90 days).
+
+Sunburn incidents.
+
+Skin photos (if taken).
+
+Average daily UV exposure.
+
+6.8 Child/Family Profiles
+Parents can create profiles for children.
+
+Separate safe limits based on child's skin type.
+
+Notifications sent to parent's phone.
+
+7. Technical Architecture
+text
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                        │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
+│  │ Dashboard│ │  Charts  │ │  Profile │ │  Reports │      │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘      │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Application Layer                        │
+│  ┌─────────────────────────────────────────────────────┐   │
+│  │          Exposure Calculation Engine                │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │          Alert & Notification Manager               │   │
+│  ├─────────────────────────────────────────────────────┤   │
+│  │          Data Synchronization Service               │   │
+│  └─────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                        Data Layer                            │
+│  ┌──────────────┐ ┌──────────────┐ ┌───────────────────┐   │
+│  │  Room Database││ SharedPreferences││     WorkManager   │   │
+│  │(Exposure,User)│ │  (Settings)  │ │ (Background Tasks)│   │
+│  └──────────────┘ └──────────────┘ └───────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   Sensors & External                         │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
+│  │Light Sens│ │   GPS    │ │   Camera │ │Weather API│      │
+│  └──────────┘ └──────────┘ └──────────┘ └──────────┘      │
+└─────────────────────────────────────────────────────────────┘
+8. Technology Stack
+Frontend (Android App)
+Component	Technology	Justification
+Language	Kotlin	Modern, concise, official Android language
+UI Toolkit	Jetpack Compose	Declarative UI, less code, modern
+Architecture	MVVM	Separation of concerns, testability
+Dependency Injection	Dagger Hilt	Standard for Android
+Backend & APIs
+Component	Technology	Justification
+UV Data API	OpenUV or OpenWeatherMap	Free tier available, accurate UV data
+Maps	Google Maps SDK	Familiar UI, reliable
+Background Processing	WorkManager	Android's recommended background task scheduler
+Local Database	Room	SQLite abstraction, compile-time queries
+Preferences	DataStore	Modern replacement for SharedPreferences
+Development Tools
+IDE: Android Studio Ladybug
+
+Version Control: Git + GitHub
+
+Project Management: Trello / GitHub Projects
+
+Design: Figma (UI/UX prototyping)
+
+Testing: JUnit, Espresso (UI tests)
+
+9. Database Design
+Entity-Relationship Diagram
+text
+┌─────────────────┐       ┌─────────────────┐
+│     User        │       │   Exposure      │
+├─────────────────┤       ├─────────────────┤
+│ PK: userId      │       │ PK: exposureId  │
+│ skinType        │──────<│ FK: userId      │
+│ sunscreenSPF    │       │ startTime       │
+│ vitaminDDeficient│       │ endTime         │
+│ birthYear       │       │ avgLightLux     │
+│ locationEnabled │       │ uvIndex         │
+└─────────────────┘       │ location        │
+                          │ burned?         │
+                          └─────────────────┘
+        1                        N
+
+┌─────────────────┐       ┌─────────────────┐
+│   Reminder      │       │   SkinPhoto     │
+├─────────────────┤       ├─────────────────┤
+│ PK: reminderId  │       │ PK: photoId     │
+│ FK: userId      │       │ FK: userId      │
+│ time            │       │ timestamp       │
+│ type (reapply)  │       │ imagePath       │
+│ enabled         │       │ note            │
+└─────────────────┘       │ bodyPart        │
+                          └─────────────────┘
+Key Tables
+User Table
+
+sql
+CREATE TABLE User (
+    userId INTEGER PRIMARY KEY AUTOINCREMENT,
+    skinType INTEGER NOT NULL, -- Fitzpatrick I-VI
+    sunscreenSPF INTEGER DEFAULT 30,
+    vitaminDDeficient BOOLEAN DEFAULT false,
+    birthYear INTEGER,
+    locationEnabled BOOLEAN DEFAULT true,
+    createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+Exposure Table
+
+sql
+CREATE TABLE Exposure (
+    exposureId INTEGER PRIMARY KEY AUTOINCREMENT,
+    userId INTEGER,
+    startTime TIMESTAMP NOT NULL,
+    endTime TIMESTAMP,
+    avgLightLux REAL,
+    uvIndex REAL,
+    latitude REAL,
+    longitude REAL,
+    locationName TEXT,
+    burned BOOLEAN DEFAULT false,
+    notes TEXT,
+    FOREIGN KEY(userId) REFERENCES User(userId)
+);
+10. User Interface Design
+Screen Flow
+text
+┌─────────────────────────────────────────────────────────┐
+│                      Splash Screen                        │
+│                         (3 sec)                           │
+└─────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│                  Onboarding (First Launch)               │
+│  • Skin Type Selection (Fitzpatrick Scale)               │
+│  • Sunscreen Preferences                                  │
+│  • Permissions (Location, Sensors, Notifications)        │
+└─────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────┐
+│                     Main Dashboard                        │
+├─────────────────────────────────────────────────────────┤
+│ ┌─────────────────────────────────────────────────────┐ │
+│ │ Current UV Index: 7 (High)        Location: Douala │ │
+│ │ Safe Time Remaining: 23 minutes                     │ │
+│ │ [ PROGRESS BAR: 77% of daily limit ]                │ │
+│ └─────────────────────────────────────────────────────┘ │
+│                                                         │
+│ Today's Exposure: 45 minutes                            │
+│ ┌────┬────┬────┬────┬────┬────┬────┬────┬────┬────┐   │ │
+│ │8AM │9AM │10AM│11AM│12PM│1PM │2PM │3PM │4PM │5PM │   │ │
+│ │░░░░│░░░░│████│████│████│██░░│░░░░│░░░░│░░░░│░░░░│   │ │
+│ └────┴────┴────┴────┴────┴────┴────┴────┴────┴────┘   │ │
+│                                                         │
+│ [ APPLY SUNSCREEN ]  [ LOG EXPOSURE ]  [ VIEW REPORT ] │ │
+└─────────────────────────────────────────────────────────┘
+Key Screens
+Dashboard: Real-time UV, safe time remaining, today's timeline.
+
+Exposure Log: Calendar view with daily exposure totals.
+
+UV Forecast: 5-day forecast with peak hours highlighted.
+
+Skin Profile: Manage skin type, SPF, vitamin D settings.
+
+Reports: Generate and share PDF reports.
+
+Photo Log: Track skin spots over time.
+
+11. Implementation Timeline (12 Weeks)
+Week	Sprint	Deliverables
+1-2	Foundation	Project setup, Kotlin environment, basic navigation, sensor permission handling
+3-4	Sensor Integration	Ambient light sensor monitoring, GPS location, background data collection with WorkManager
+5-6	API Integration	UV data API connection, caching strategy, offline support
+7-8	Core Logic	Exposure calculation engine, safe limit algorithm, alert triggers
+9-10	UI/UX	Dashboard, charts, settings screens, PDF report generation
+11	Testing	Unit tests, integration tests, user acceptance testing
+12	Polishing	Bug fixes, performance optimization, documentation
+12. Testing Strategy
+Unit Testing
+Exposure Calculation: Test algorithm with various UV indices and skin types.
+
+Safe Limit Logic: Verify limits change correctly with inputs.
+
+Date/Time Handling: Ensure accurate accumulation across days.
+
+Integration Testing
+Sensor Data Flow: Light sensor → database → UI.
+
+API Integration: Mock API responses, test caching.
+
+Notification System: Verify triggers fire at correct thresholds.
+
+Device Testing
+Test on minimum 5 physical devices with varying:
+
+Android versions (10-15)
+
+Screen sizes (small phone to tablet)
+
+Sensor quality (budget to flagship)
+
+Manufacturers (Samsung, Xiaomi, Google, Tecno)
+
+User Acceptance Testing
+10-15 test users with different skin types.
+
+Collect feedback on alert timing and accuracy.
+
+Validate UV index correlation with real conditions.
+
+13. Constraints & Limitations
+Technical Constraints
+Constraint	Impact	Mitigation
+Light sensor unavailable on some budget phones	Cannot auto-track	Manual logging option
+Light sensor accuracy varies	False positives/negatives	Calibration + user adjustments
+Battery drain from continuous sensing	User may disable	Optimize sampling rate; use Motion传感器 to detect outdoor activity before sampling
+GPS usage drains battery	Location-based UV may be disabled	Cache UV data; use network location when possible
+API rate limits	Free UV APIs have daily limits	Cache aggressively; fallback to estimated UV
+Functional Limitations
+Phone Placement: If phone is in bag/pocket, light sensor won't detect sun.
+
+Indoor UV: Windows block some UVB but not UVA – app focuses on outdoor.
+
+Cloud Cover: API provides UV forecast; real-time sensor may show lower readings.
+
+Medical Accuracy: App provides estimates, not medical devices. Disclaimers required.
+
+14. Future Enhancements
+Phase 2 (Post-MVP)
+Smartwatch Companion: Wear OS app for wrist-based tracking.
+
+Sunscreen Scanner: Scan sunscreen barcode to auto-set SPF.
+
+Cloud Sync: Encrypted backup across devices.
+
+Social Features: Share UV-safe times with friends (privacy-focused).
+
+Phase 3 (Advanced)
+Skin Tone Detection: Use camera to estimate Fitzpatrick type automatically.
+
+Melanoma Risk Assessment: ML model to flag suspicious moles (with medical disclaimers).
+
+AR Sun Visualization: Overlay UV intensity on camera view.
+
+Smart Home Integration: Connect to smart blinds that close at peak UV.
+
+15. Conclusion
+SunSafe addresses a genuine, widespread health concern using technology already in users' pockets. By combining the ambient light sensor, GPS, and intelligent algorithms, it transforms abstract UV index numbers into personalized, actionable health guidance.
+
+The project demonstrates:
+
+Practical sensor integration (light sensor + GPS)
+
+Real-world problem solving (skin cancer prevention)
+
+User-centered design (personalized limits, clear visuals)
+
+Technical depth (background processing, API integration, local storage)
+
+With a 12-week development timeline, SunSafe is achievable as a final-year project while delivering a portfolio-worthy application with genuine market potential.
+
+16. References
+Fitzpatrick, T. B. (1988). "The validity and practicality of sun-reactive skin types I through VI." Archives of Dermatology.
+
+World Health Organization. (2022). "Ultraviolet radiation (UV) fact sheet."
+
+OpenUV API Documentation. (2026). "Global UV Index Data."
+
+Android Developers Documentation. (2026). "Sensors Overview."
+
+Skin Cancer Foundation. (2025). "Sun Protection Guidelines."
