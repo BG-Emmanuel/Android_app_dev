@@ -1,0 +1,53 @@
+// Define the Drawable interface
+interface Drawable {
+    fun draw()
+}
+
+// Circle class with a radius property
+class Circle(val radius: Int) : Drawable {
+    override fun draw() {
+        // Simple ASCII circle representation (fixed size for simplicity)
+        println("  ***  ")
+        println(" *   * ")
+        println("*     *")
+        println(" *   * ")
+        println("  ***  ")
+        // Could also use radius to scale the drawing, but keeping it simple
+    }
+}
+
+// Square class with a side length property
+class Square(val sideLength: Int) : Drawable {
+    override fun draw() {
+        // Draw a hollow square of the given side length
+        for (i in 0 until sideLength) {
+            for (j in 0 until sideLength) {
+                // Print '*' for border, space for interior
+                if (i == 0 || i == sideLength - 1 || j == 0 || j == sideLength - 1) {
+                    print("*")
+                } else {
+                    print(" ")
+                }
+            }
+            println() // new line after each row
+        }
+    }
+}
+
+// Main function to demonstrate polymorphism
+fun main() {
+    // Create a list of Drawable objects (polymorphic collection)
+    val shapes: List<Drawable> = listOf(
+        Circle(3),
+        Square(4),
+        Square(2),
+        Circle(5)
+    )
+
+    // Iterate and call draw() on each shape
+    shapes.forEachIndexed { index, shape ->
+        println("Shape ${index + 1}:")
+        shape.draw()
+        println() // blank line between shapes
+    }
+}
