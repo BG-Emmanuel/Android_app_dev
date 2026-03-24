@@ -103,6 +103,17 @@ class AppViewModel {
     val topPerformers: List<StudentRecord>
         get() = importedStudents.topPerformers(5)
 
+    val gradeDistribution: Map<String, Int>
+        get() = importedStudents
+            .groupingBy { if (it.grade.isBlank()) "Ungraded" else it.grade }
+            .eachCount()
+
+    val failCount: Int
+        get() = importedStudents.count { !it.hasPassed() }
+
+    val excellentCount: Int
+        get() = importedStudents.count { it.finalScore >= 70 }
+
     val filteredVault: List<ProcessedFile>
         get() {
             val q = vaultSearch.lowercase()
@@ -214,6 +225,9 @@ class AppViewModel {
     }
 
     fun addStudent(student: StudentRecord) {
+        if (importedStudents.any { it.id.equals(student.id, ignoreCase = true) }) {
+            return showError("Student with ID '${student.id}' already exists")
+        }
         importedStudents = importedStudents + student
         showSuccess("Added student ${student.name}")
     }

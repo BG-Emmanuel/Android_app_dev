@@ -44,6 +44,11 @@ fun HomeView(vm: AppViewModel) {
             WarningBanner(vm.importWarnings)
         }
 
+        // ── Class stats summary ───────────────────────────────────────────────
+        if (vm.importedStudents.isNotEmpty()) {
+            StatsSummaryCard(vm)
+        }
+
         // ── Toolbar (search + controls) if we have data ───────────────────────
         if (vm.importedStudents.isNotEmpty()) {
             DataToolbar(vm)
@@ -191,6 +196,7 @@ private fun ImportSection(vm: AppViewModel) {
 private fun DataToolbar(vm: AppViewModel) {
     var showExportMenu    by remember { mutableStateOf(false) }
     var showCurveDialog   by remember { mutableStateOf(false) }
+    var showAddDialog     by remember { mutableStateOf(false) }
 
     Row(
         Modifier.fillMaxWidth(),
@@ -226,6 +232,13 @@ private fun DataToolbar(vm: AppViewModel) {
             Icon(Icons.Default.TrendingUp, contentDescription = null, Modifier.size(16.dp))
             Spacer(Modifier.width(4.dp))
             Text("Curve")
+        }
+
+        // Add student
+        OutlinedButton(onClick = { showAddDialog = true }) {
+            Icon(Icons.Default.PersonAdd, contentDescription = null, Modifier.size(16.dp))
+            Spacer(Modifier.width(4.dp))
+            Text("Add Student")
         }
 
         // Save to vault
@@ -283,6 +296,101 @@ private fun DataToolbar(vm: AppViewModel) {
             onDismiss   = { showCurveDialog = false }
         )
     }
+
+    if (showAddDialog) {
+        AddStudentDialog(
+            onSubmit = { student ->
+                vm.addStudent(student)
+                showAddDialog = false
+            },
+            onDismiss = { showAddDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun StatsSummaryCard(vm: AppViewModel) {
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Class Statistics", fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface)
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Students", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(vm.importedStudents.size.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Pass Rate", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text("${"%.1f".format(vm.passRate)}%", fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Fail", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(vm.failCount.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Excellent", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text(vm.excellentCount.toString(), fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Text("Top performers: " + vm.topPerformers.take(3).joinToString { "${it.name} (${"%.1f".format(it.finalScore)})" },
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis)
+        }
+    }
+}
+
+@Composable
+private fun AddStudentDialog(onSubmit: (StudentRecord) -> Unit, onDismiss: () -> Unit) {
+    var studentId by remember { mutableStateOf("") }
+    var name by remember { mutableStateOf("") }
+    var caScore by remember { mutableStateOf("") }
+    var examScore by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Student") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(value = studentId, onValueChange = { studentId = it }, label = { Text("ID") }, singleLine = true)
+                OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true)
+                OutlinedTextField(value = caScore, onValueChange = { caScore = it }, label = { Text("CA Score") }, singleLine = true)
+                OutlinedTextField(value = examScore, onValueChange = { examScore = it }, label = { Text("Exam Score") }, singleLine = true)
+                if (error != null) {
+                    Text(error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = {
+                val ca = caScore.toDoubleOrNull()
+                val exam = examScore.toDoubleOrNull()
+                when {
+                    studentId.isBlank() -> error = "Student ID is required"
+                    name.isBlank() -> error = "Name is required"
+                    ca == null || ca < 0.0 || ca > 30.0 -> error = "CA score must be between 0 and 30"
+                    exam == null || exam < 0.0 || exam > 70.0 -> error = "Exam score must be between 0 and 70"
+                    else -> {
+                        onSubmit(StudentRecord(studentId.trim(), name.trim(), ca, exam, 0.0, ""))
+                        error = null
+                    }
+                }
+            }) {
+                Text("Add")
+            }
+        },
+        dismissButton = {
+            OutlinedButton(onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
