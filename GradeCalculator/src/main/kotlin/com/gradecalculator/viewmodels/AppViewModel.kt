@@ -114,6 +114,15 @@ class AppViewModel {
     val excellentCount: Int
         get() = importedStudents.count { it.finalScore >= 70 }
 
+    val classStatistics: ClassStatistics
+        get() = importedStudents.calculateClassStatistics()
+
+    val studentRankings: Map<String, Int>
+        get() = importedStudents.withRankings()
+
+    val atRiskStudents: List<StudentRecord>
+        get() = importedStudents.identifyAtRiskStudents()
+
     val filteredVault: List<ProcessedFile>
         get() {
             val q = vaultSearch.lowercase()
@@ -278,6 +287,26 @@ class AppViewModel {
         importWarnings   = emptyList()
         searchQuery      = ""
         currentPage      = 0
+    }
+
+    fun getStudentRank(studentId: String): String {
+        val rank = studentRankings[studentId] ?: return "—"
+        return when (rank) {
+            1 -> "1st"
+            2 -> "2nd"
+            3 -> "3rd"
+            else -> "${rank}th"
+        }
+    }
+
+    fun getPercentile(student: StudentRecord): Double {
+        return importedStudents.getPercentile(student)
+    }
+
+    fun predictScoreForGrade(targetGrade: String): Double {
+        val gradeRanges = activeScale.ranges
+        val range = gradeRanges.find { it.grade == targetGrade } ?: return 0.0
+        return range.minScore
     }
 
     // ─────────────────────────────────────────────────────────────────────────

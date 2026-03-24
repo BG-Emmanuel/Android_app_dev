@@ -98,28 +98,82 @@ fun List<StudentRecord>.detectDuplicates(): List<String> {
     return duplicates
 }
 
-fun demonstrateHigherOrderFunctions() {
-    val students = listOf(
-        StudentRecord("001", "John Doe", caScore = 25.0, examScore = 60.0, finalScore = 85.0),
-        StudentRecord("002", "Jane Smith", caScore = 28.0, examScore = 65.0, finalScore = 93.0),
-        StudentRecord("003", "Bob Jones", caScore = 10.0, examScore = 20.0, finalScore = 30.0)
-    )
+fun List<StudentRecord>.withRankings(): Map<String, Int> {
+    return sortedByDescending { it.finalScore }
+        .mapIndexed { index, student -> student.id to (index + 1) }
+        .toMap()
+}
 
+fun List<StudentRecord>.calculateClassStatistics(): ClassStatistics {
+    if (isEmpty()) return ClassStatistics(0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0.0, emptyMap(), 0.0)
+    
+    val scores = map { it.finalScore }.sorted()
+    val mean = scores.average()
+    val variance = scores.map { (it - mean) * (it - mean) }.average()
+    val stdDev = kotlin.math.sqrt(variance)
+    
+    val median = if (scores.size % 2 == 0) {
+        (scores[scores.size / 2 - 1] + scores[scores.size / 2]) / 2.0
+    } else {
+        scores[scores.size / 2]
+    }
+    
+    val pass = count { it.hasPassed() }
+    val fail = size - pass
+    val gradeDistribution = groupingBy { it.grade.ifBlank { "Ungraded" } }.eachCount()
+    
+    return ClassStatistics(
+        average = mean,
+        median = median,
+        highest = scores.maxOrNull() ?: 0.0,
+        lowest = scores.minOrNull() ?: 0.0,
+        passCount = pass,
+        failCount = fail,
+        totalStudents = size,
+        standardDeviation = stdDev,
+        gradeDistribution = gradeDistribution,
+        passRate = calculatePassRate()
+    )
+}
+
+fun List<StudentRecord>.identifyAtRiskStudents(): List<StudentRecord> {
+    if (size < 5) return emptyList()
+    val sorted = sortedBy { it.finalScore }
+    val bottomThreshold = (size * 0.2).toInt().coerceAtLeast(1)
+    return sorted.take(bottomThreshold)
+}
+
+fun List<StudentRecord>.getPercentile(student: StudentRecord): Double {
+    if (isEmpty()) return 0.0
+    val better = count { it.finalScore > student.finalScore }
+    return (100.0 * (size - better)) / size
+}
+
+fun List<StudentRecord>.demonstrateHigherOrderFunctions() {
     // Lambda: filter passing students and mark them
-    val passedStudents = students.processWithRule(
+    val passedStudents = this.processWithRule(
         rule = { it.finalScore >= 40 },
         transformer = { it.copy(grade = "PASS") }
     )
     println("Passed students: ${passedStudents.map { it.name }}")
 
     // Collection operations chained
-    val topPerformers = students
+    val topPerformers = this
         .filter { it.finalScore > 70 }
         .sortedByDescending { it.finalScore }
     topPerformers.forEach { println("Top: ${it.name} - ${it.finalScore}") }
 
     // Pass rate
-    println("Pass rate: ${"%.1f".format(students.calculatePassRate())}%")
+    println("Pass rate: ${"%.1f".format(this.calculatePassRate())}%")
+}
+
+fun demonstrateHigherOrderFunctions() {
+    val students = listOf(
+        StudentRecord("001", "John Doe", caScore = 25.0, examScore = 60.0, finalScore = 85.0),
+        StudentRecord("002", "Jane Smith", caScore = 28.0, examScore = 65.0, finalScore = 93.0),
+        StudentRecord("003", "Bob Jones", caScore = 10.0, examScore = 20.0, finalScore = 30.0)
+    )
+    students.demonstrateHigherOrderFunctions()
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

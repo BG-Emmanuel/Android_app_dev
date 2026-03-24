@@ -47,6 +47,7 @@ fun HomeView(vm: AppViewModel) {
         // ── Class stats summary ───────────────────────────────────────────────
         if (vm.importedStudents.isNotEmpty()) {
             StatsSummaryCard(vm)
+            PerformanceInsightsCard(vm)
         }
 
         // ── Toolbar (search + controls) if we have data ───────────────────────
@@ -348,6 +349,81 @@ private fun StatsSummaryCard(vm: AppViewModel) {
 }
 
 @Composable
+private fun PerformanceInsightsCard(vm: AppViewModel) {
+    val stats = vm.classStatistics
+    Card(
+        Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+    ) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Text("Performance Insights", fontWeight = FontWeight.SemiBold, fontSize = 16.sp,
+                color = MaterialTheme.colorScheme.onSurface)
+
+            // Stats row: Average, Median, Std Dev
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
+                    Text("Average", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text("${"%.1f".format(stats.average)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Median", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text("${"%.1f".format(stats.median)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Std Dev", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text("${"%.2f".format(stats.standardDeviation)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Range", fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f))
+                    Text("${"%.0f".format(stats.lowest)}–${"%.0f".format(stats.highest)}", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            // Grade distribution
+            if (stats.gradeDistribution.isNotEmpty()) {
+                Text("Grade Distribution:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    stats.gradeDistribution.entries.forEach { (grade, count) ->
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            val pct = (count * 100) / vm.importedStudents.size
+                            Box(
+                                Modifier.fillMaxWidth().height(4.dp)
+                                    .background(AppColors.gradeColor(grade).copy(alpha = 0.7f), RoundedCornerShape(2.dp))
+                            )
+                            Text("$grade ($count)", fontSize = 10.sp, textAlign = TextAlign.Center)
+                        }
+                    }
+                }
+            }
+
+            // At-risk students alert
+            if (vm.atRiskStudents.isNotEmpty()) {
+                Surface(
+                    Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f))
+                ) {
+                    Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                            Icon(Icons.Default.Warning, contentDescription = null,
+                                tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                            Text("⚠ ${vm.atRiskStudents.size} students in bottom 20%", fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
+                        }
+                        Text(vm.atRiskStudents.take(3).joinToString { "${it.name} (${"%.1f".format(it.finalScore)})" },
+                            fontSize = 11.sp, color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun AddStudentDialog(onSubmit: (StudentRecord) -> Unit, onDismiss: () -> Unit) {
     var studentId by remember { mutableStateOf("") }
     var name by remember { mutableStateOf("") }
@@ -428,6 +504,11 @@ private fun TableHeader(vm: AppViewModel) {
         Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Rank column
+        Text("Rank", modifier = Modifier.width(50.dp).padding(12.dp, 10.dp),
+            fontWeight = FontWeight.Bold, fontSize = 13.sp,
+            color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
+        
         columns.forEachIndexed { idx, (col, label) ->
             val weight = if (idx == 1) 2f else 1f
             Row(
@@ -457,11 +538,27 @@ private fun StudentRow(vm: AppViewModel, student: StudentRecord, idx: Int) {
     val bg = if (idx % 2 == 0) Color.Transparent
              else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
     val invalid = !student.validateScores().isValid
+    val rank = vm.getStudentRank(student.id)
+    val isAtRisk = vm.atRiskStudents.any { it.id == student.id }
 
     Row(
         Modifier.fillMaxWidth().background(bg).padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Rank
+        Box(Modifier.width(50.dp).padding(12.dp, 8.dp), contentAlignment = Alignment.Center) {
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = if (isAtRisk) MaterialTheme.colorScheme.error.copy(alpha = 0.1f)
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+            ) {
+                Text(rank, modifier = Modifier.padding(4.dp), fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isAtRisk) MaterialTheme.colorScheme.error
+                           else MaterialTheme.colorScheme.primary)
+            }
+        }
+        
         Text(student.id,    Modifier.weight(1f).padding(horizontal = 12.dp, vertical = 8.dp),
             fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         Text(student.name, Modifier.weight(2f).padding(horizontal = 12.dp, vertical = 8.dp),
