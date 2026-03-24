@@ -75,6 +75,16 @@ private fun HomeTopBar(vm: AppViewModel) {
                 else "Import a file to get started",
                 fontSize = 13.sp, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
+
+            if (vm.importedStudents.isNotEmpty()) {
+                val topStudent = vm.topPerformers.firstOrNull()
+                Text(
+                    "Pass rate: ${"%.1f".format(vm.passRate)}%" +
+                    if (topStudent != null) " · Top: ${topStudent.name} (${"%.1f".format(topStudent.finalScore)})" else "",
+                    fontSize = 12.sp,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+                )
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             // Theme toggle
@@ -294,7 +304,7 @@ private fun StudentTable(vm: AppViewModel) {
             // Data rows (lazy for performance)
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                 itemsIndexed(vm.pagedStudents) { idx, student ->
-                    StudentRow(student, idx)
+                    StudentRow(vm, student, idx)
                     if (idx < vm.pagedStudents.lastIndex) HorizontalDivider(thickness = 0.5.dp)
                 }
             }
@@ -335,7 +345,7 @@ private fun TableHeader(vm: AppViewModel) {
 }
 
 @Composable
-private fun StudentRow(student: StudentRecord, idx: Int) {
+private fun StudentRow(vm: AppViewModel, student: StudentRecord, idx: Int) {
     val bg = if (idx % 2 == 0) Color.Transparent
              else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.03f)
     val invalid = !student.validateScores().isValid
@@ -353,6 +363,11 @@ private fun StudentRow(student: StudentRecord, idx: Int) {
         ScoreCell(student.finalScore, 1f, false)
         GradeChip(student.grade, Modifier.weight(1f).padding(horizontal = 12.dp))
         StatusChip(student.getGradeStatus(), Modifier.width(90.dp).padding(end = 12.dp))
+
+        IconButton(onClick = { vm.deleteStudent(student.id) }) {
+            Icon(Icons.Default.Delete, contentDescription = "Delete student",
+                tint = MaterialTheme.colorScheme.error)
+        }
     }
 }
 

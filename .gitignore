@@ -1,0 +1,15 @@
+# Build files
+.gradle/
+build/
+**/build/
+
+# IDE config
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Compiled output
+out/

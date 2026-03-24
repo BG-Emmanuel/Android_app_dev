@@ -97,6 +97,12 @@ class AppViewModel {
     val totalPages: Int
         get() = maxOf(1, (filteredStudents.size + pageSize - 1) / pageSize)
 
+    val passRate: Double
+        get() = importedStudents.calculatePassRate()
+
+    val topPerformers: List<StudentRecord>
+        get() = importedStudents.topPerformers(5)
+
     val filteredVault: List<ProcessedFile>
         get() {
             val q = vaultSearch.lowercase()
@@ -122,8 +128,13 @@ class AppViewModel {
             setLoading("Importing ${file.name}…")
             try {
                 val result       = importController.importFile(file, activeScale)
+                val duplicates = result.processedFile.students.detectDuplicates()
+                val duplicateWarnings = if (duplicates.isNotEmpty())
+                    listOf("Duplicate student IDs detected: ${duplicates.joinToString()}")
+                else emptyList()
+
                 importedStudents = result.processedFile.students
-                importWarnings   = result.warnings + result.invalidStudents
+                importWarnings   = result.warnings + result.invalidStudents + duplicateWarnings
                 currentFile      = result.processedFile
                 currentPage      = 0
                 showSuccess("Imported ${result.processedFile.students.size} students from ${file.name}")
@@ -138,7 +149,13 @@ class AppViewModel {
             setLoading("Fetching from Google Sheets…")
             try {
                 val result       = importController.importGoogleSheet(url, activeScale)
+                val duplicates = result.processedFile.students.detectDuplicates()
+                val duplicateWarnings = if (duplicates.isNotEmpty())
+                    listOf("Duplicate student IDs detected: ${duplicates.joinToString()}")
+                else emptyList()
+
                 importedStudents = result.processedFile.students
+                importWarnings   = duplicateWarnings
                 currentFile      = result.processedFile
                 currentPage      = 0
                 showSuccess("Fetched ${result.processedFile.students.size} students from sheet")
@@ -153,8 +170,13 @@ class AppViewModel {
             setLoading("Loading sample data…")
             try {
                 val result       = importController.importSampleData(activeScale)
+                val duplicates = result.processedFile.students.detectDuplicates()
+                val duplicateWarnings = if (duplicates.isNotEmpty())
+                    listOf("Duplicate student IDs detected: ${duplicates.joinToString()}")
+                else emptyList()
+
                 importedStudents = result.processedFile.students
-                importWarnings   = result.warnings
+                importWarnings   = result.warnings + duplicateWarnings
                 currentFile      = result.processedFile
                 currentPage      = 0
                 showSuccess("Loaded ${result.processedFile.students.size} sample students")
@@ -181,6 +203,19 @@ class AppViewModel {
                 showError("Processing failed: ${e.message}")
             } finally { clearLoading() }
         }
+    }
+
+    fun deleteStudent(id: String) {
+        val removed = importedStudents.any { it.id == id }
+        if (!removed) return
+        importedStudents = importedStudents.filter { it.id != id }
+        if (currentPage >= totalPages) currentPage = totalPages - 1
+        showSuccess("Deleted student $id")
+    }
+
+    fun addStudent(student: StudentRecord) {
+        importedStudents = importedStudents + student
+        showSuccess("Added student ${student.name}")
     }
 
     fun saveToVault() {
