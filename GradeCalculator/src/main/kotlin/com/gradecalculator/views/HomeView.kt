@@ -26,6 +26,16 @@ import javax.swing.JFileChooser
 import javax.swing.filechooser.FileNameExtensionFilter
 
 // ─────────────────────────────────────────────────────────────────────────────
+// UI LAYER: LAMBDA FUNCTIONS FOR EVENT HANDLING & COMPOSITION
+// ─────────────────────────────────────────────────────────────────────────────
+// This file uses lambdas extensively for:
+// - Click handlers: onClick = { ... }
+// - State callbacks: onValueChange = { ... }
+// - Dialog confirmations: onSubmit = { ... }
+// - List rendering: LazyColumn { itemsIndexed(...) { ... } }
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Home View
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -93,7 +103,8 @@ private fun HomeTopBar(vm: AppViewModel) {
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            // Theme toggle
+            // ✓ LAMBDA #UI-1: Method reference (shorthand lambda)
+            // Translation: { vm.toggleTheme() }
             IconButton(onClick = vm::toggleTheme) {
                 Icon(
                     if (vm.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
@@ -101,7 +112,7 @@ private fun HomeTopBar(vm: AppViewModel) {
                     tint = MaterialTheme.colorScheme.primary
                 )
             }
-            // Load sample data
+            // ✓ LAMBDA #UI-2: Simple lambda with side effect
             OutlinedButton(onClick = vm::loadSampleData) {
                 Icon(Icons.Default.Science, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(4.dp))
@@ -129,6 +140,7 @@ private fun ImportSection(vm: AppViewModel) {
                 fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
 
             // Drag-drop zone
+            // ✓ LAMBDA #UI-3: clickable lambda with side effect
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -157,7 +169,7 @@ private fun ImportSection(vm: AppViewModel) {
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Browse button
+                // ✓ LAMBDA #UI-4: Click handler lambda
                 Button(
                     onClick = { openFileChooser(vm) },
                     modifier = Modifier.weight(1f)
@@ -166,7 +178,7 @@ private fun ImportSection(vm: AppViewModel) {
                     Spacer(Modifier.width(6.dp))
                     Text("Browse File")
                 }
-                // Google Sheets button
+                // ✓ LAMBDA #UI-5: State toggle lambda
                 OutlinedButton(
                     onClick = { showGoogleSheetDialog = true },
                     modifier = Modifier.weight(1f)
@@ -179,6 +191,7 @@ private fun ImportSection(vm: AppViewModel) {
         }
     }
 
+    // ✓ LAMBDA #UI-6: Callback lambdas chained (onUrlChange, onImport, onDismiss)
     if (showGoogleSheetDialog) {
         GoogleSheetsDialog(
             url       = vm.googleSheetUrl,
@@ -385,6 +398,7 @@ private fun PerformanceInsightsCard(vm: AppViewModel) {
                 Text("Grade Distribution:", fontSize = 12.sp, fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    // ✓ LAMBDA #UI-7: forEach lambda for side-effect iteration
                     stats.gradeDistribution.entries.forEach { (grade, count) ->
                         Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                             val pct = (count * 100) / vm.importedStudents.size
@@ -436,6 +450,7 @@ private fun AddStudentDialog(onSubmit: (StudentRecord) -> Unit, onDismiss: () ->
         title = { Text("Add Student") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                // ✓ LAMBDA #UI-8: onValueChange lambda for state binding
                 OutlinedTextField(value = studentId, onValueChange = { studentId = it }, label = { Text("ID") }, singleLine = true)
                 OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Name") }, singleLine = true)
                 OutlinedTextField(value = caScore, onValueChange = { caScore = it }, label = { Text("CA Score") }, singleLine = true)
@@ -446,6 +461,7 @@ private fun AddStudentDialog(onSubmit: (StudentRecord) -> Unit, onDismiss: () ->
             }
         },
         confirmButton = {
+            // ✓ LAMBDA #UI-9: Complex click handler lambda with validation logic
             Button(onClick = {
                 val ca = caScore.toDoubleOrNull()
                 val exam = examScore.toDoubleOrNull()
@@ -455,6 +471,7 @@ private fun AddStudentDialog(onSubmit: (StudentRecord) -> Unit, onDismiss: () ->
                     ca == null || ca < 0.0 || ca > 30.0 -> error = "CA score must be between 0 and 30"
                     exam == null || exam < 0.0 || exam > 70.0 -> error = "Exam score must be between 0 and 70"
                     else -> {
+                        // ✓ LAMBDA #UI-10: Callback lambda (onSubmit invocation)
                         onSubmit(StudentRecord(studentId.trim(), name.trim(), ca, exam, 0.0, ""))
                         error = null
                     }
@@ -486,6 +503,7 @@ private fun StudentTable(vm: AppViewModel) {
             HorizontalDivider()
 
             // Data rows (lazy for performance)
+            // ✓ LAMBDA #UI-11: itemsIndexed lambda for list composition with index
             LazyColumn(Modifier.fillMaxWidth().heightIn(max = 400.dp)) {
                 itemsIndexed(vm.pagedStudents) { idx, student ->
                     StudentRow(vm, student, idx)
@@ -509,8 +527,10 @@ private fun TableHeader(vm: AppViewModel) {
             fontWeight = FontWeight.Bold, fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurface, textAlign = TextAlign.Center)
         
+        // ✓ LAMBDA #UI-12: forEachIndexed lambda for header rendering with index
         columns.forEachIndexed { idx, (col, label) ->
             val weight = if (idx == 1) 2f else 1f
+            // ✓ LAMBDA #UI-13: clickable lambda for sort toggle
             Row(
                 Modifier.weight(weight).clickable { vm.toggleSort(col) }.padding(12.dp, 10.dp),
                 verticalAlignment = Alignment.CenterVertically
@@ -569,6 +589,7 @@ private fun StudentRow(vm: AppViewModel, student: StudentRecord, idx: Int) {
         GradeChip(student.grade, Modifier.weight(1f).padding(horizontal = 12.dp))
         StatusChip(student.getGradeStatus(), Modifier.width(90.dp).padding(end = 12.dp))
 
+        // ✓ LAMBDA #UI-14: onClick lambda for delete action
         IconButton(onClick = { vm.deleteStudent(student.id) }) {
             Icon(Icons.Default.Delete, contentDescription = "Delete student",
                 tint = MaterialTheme.colorScheme.error)

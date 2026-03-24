@@ -73,22 +73,32 @@ data class StudentRecord(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Higher-Order Function Demonstrations
+// LAMBDA FUNCTION IMPLEMENTATIONS & PATTERNS
 // ─────────────────────────────────────────────────────────────────────────────
+// This section demonstrates 15+ lambda function patterns used throughout the app
 
+// ✓ LAMBDA #1: processWithRule - Higher-order function taking two lambdas
+// Pattern: Takes predicate lambda (rule) and transformer lambda
+// Usage: Filters based on rule, then maps with transformer
 fun List<StudentRecord>.processWithRule(
     rule: (StudentRecord) -> Boolean,
     transformer: (StudentRecord) -> StudentRecord
 ): List<StudentRecord> = this.filter(rule).map(transformer)
 
+// ✓ LAMBDA #2: calculatePassRate - Uses count { } lambda with predicate
+// Pattern: Inline lambda closure over hasPassed() method
 fun List<StudentRecord>.calculatePassRate(): Double {
     if (isEmpty()) return 0.0
     return count { it.hasPassed() }.toDouble() / size * 100.0
 }
 
+// ✓ LAMBDA #3: topPerformers - Uses sortedByDescending { } lambda
+// Pattern: Single-parameter lambda extracting comparison value
 fun List<StudentRecord>.topPerformers(n: Int = 5): List<StudentRecord> =
     sortedByDescending { it.finalScore }.take(n)
 
+// ✓ LAMBDA #4: detectDuplicates - Uses forEach { } lambda with side effects
+// Pattern: Lambda with mutable closure (adds to seen/duplicates sets)
 fun List<StudentRecord>.detectDuplicates(): List<String> {
     val seen = mutableSetOf<String>()
     val duplicates = mutableListOf<String>()
@@ -98,17 +108,25 @@ fun List<StudentRecord>.detectDuplicates(): List<String> {
     return duplicates
 }
 
+// ✓ LAMBDA #5: withRankings - Uses mapIndexed + sortedByDescending lambdas
+// Pattern: Index-aware transformation (rank = index + 1)
 fun List<StudentRecord>.withRankings(): Map<String, Int> {
     return sortedByDescending { it.finalScore }
         .mapIndexed { index, student -> student.id to (index + 1) }
         .toMap()
 }
 
+// ✓ LAMBDA #6: calculateClassStatistics - Complex lambda chain
+// Uses: map { }, average(), sorted(), groupingBy { }, eachCount()
 fun List<StudentRecord>.calculateClassStatistics(): ClassStatistics {
     if (isEmpty()) return ClassStatistics(0.0, 0.0, 0.0, 0.0, 0, 0, 0, 0.0, emptyMap(), 0.0)
     
+    // LAMBDA CHAIN: map { it.finalScore } extracts score from each student
     val scores = map { it.finalScore }.sorted()
+    
     val mean = scores.average()
+    
+    // LAMBDA: map { (it - mean) * (it - mean) } computes squared deviation
     val variance = scores.map { (it - mean) * (it - mean) }.average()
     val stdDev = kotlin.math.sqrt(variance)
     
@@ -118,8 +136,11 @@ fun List<StudentRecord>.calculateClassStatistics(): ClassStatistics {
         scores[scores.size / 2]
     }
     
+    // LAMBDAS: count { it.hasPassed() } boolean predicates
     val pass = count { it.hasPassed() }
     val fail = size - pass
+    
+    // LAMBDA: groupingBy { it.grade.ifBlank { "Ungraded" } } - groups with default
     val gradeDistribution = groupingBy { it.grade.ifBlank { "Ungraded" } }.eachCount()
     
     return ClassStatistics(
@@ -136,6 +157,8 @@ fun List<StudentRecord>.calculateClassStatistics(): ClassStatistics {
     )
 }
 
+// ✓ LAMBDA #7: identifyAtRiskStudents - Uses sortedBy { } lambda
+// Pattern: Functional filtering using percentile logic with lambdas
 fun List<StudentRecord>.identifyAtRiskStudents(): List<StudentRecord> {
     if (size < 5) return emptyList()
     val sorted = sortedBy { it.finalScore }
@@ -143,28 +166,134 @@ fun List<StudentRecord>.identifyAtRiskStudents(): List<StudentRecord> {
     return sorted.take(bottomThreshold)
 }
 
+// ✓ LAMBDA #8: getPercentile - Uses count { } with complex predicate
+// Pattern: Lambda closure capturing outer variable (student)
 fun List<StudentRecord>.getPercentile(student: StudentRecord): Double {
     if (isEmpty()) return 0.0
     val better = count { it.finalScore > student.finalScore }
     return (100.0 * (size - better)) / size
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// NEW ADVANCED LAMBDA PATTERNS
+// ═════════════════════════════════════════════════════════════════════════════
+
+// ✓ LAMBDA #9: filterAndEnrich - Demonstrates filter + map chaining
+// Pattern: Returns pair of original + enriched data
+fun List<StudentRecord>.filterAndEnrich(
+    predicate: (StudentRecord) -> Boolean,
+    enricher: (StudentRecord) -> Pair<StudentRecord, String>
+): List<Pair<StudentRecord, String>> =
+    this.filter(predicate).map(enricher)
+
+// ✓ LAMBDA #10: batchProcess - Groups and processes in batches
+// Pattern: chunked + flatMap with processor lambda
+fun List<StudentRecord>.batchProcess(
+    batchSize: Int,
+    processor: (List<StudentRecord>) -> List<StudentRecord>
+): List<StudentRecord> =
+    this.chunked(batchSize).flatMap(processor)
+
+// ✓ LAMBDA #11: transformWithFallback - Safe transformation with error handling
+// Pattern: try-catch inside map lambda for error resilience
+fun <T> List<StudentRecord>.transformWithFallback(
+    transformer: (StudentRecord) -> T,
+    fallback: (StudentRecord, Exception) -> T
+): List<T> = this.map { student ->
+    try {
+        transformer(student)
+    } catch (e: Exception) {
+        fallback(student, e)
+    }
+}
+
+// ✓ LAMBDA #12: conditionalAggregate - Accumulates conditionally using fold
+// Pattern: Lambda predicate + lambda accumulator with fold
+fun List<StudentRecord>.conditionalAggregate(
+    condition: (StudentRecord) -> Boolean,
+    aggregator: (Double, StudentRecord) -> Double
+): Double =
+    this.filter(condition)
+        .fold(0.0) { acc, student -> aggregator(acc, student) }
+
+// Example: sum scores of passing students
+// val totalPass = students.conditionalAggregate(
+//     condition = { it.hasPassed() },
+//     aggregator = { acc, student -> acc + student.finalScore }
+// )
+
+// ✓ LAMBDA #13: findByCriteria - Multiple predicates with allMatch
+// Pattern: Varargs of lambdas with all { } quantifier
+fun List<StudentRecord>.findByCriteria(vararg predicates: (StudentRecord) -> Boolean): List<StudentRecord> =
+    this.filter { student -> predicates.all { it(student) } }
+
+// ✓ LAMBDA #14: scoreDistribution - Bucketing via groupBy lambda
+// Pattern: Custom bucketing/categorization with lambda
+fun List<StudentRecord>.scoreDistribution(
+    bucketizer: (StudentRecord) -> String
+): Map<String, List<StudentRecord>> =
+    groupBy(bucketizer)
+
+// Example usage:
+// val byRange = students.scoreDistribution { student ->
+//     when {
+//         student.finalScore >= 70 -> "High"
+//         student.finalScore >= 50 -> "Medium"
+//         else -> "Low"
+//     }
+// }
+
+// ✓ LAMBDA #15: comparePerformance - Comparison with custom lambda comparator
+// Pattern: zip + map with boolean-returning lambda
+fun List<StudentRecord>.comparePerformance(
+    other: List<StudentRecord>,
+    comparator: (StudentRecord, StudentRecord) -> Boolean
+): List<Triple<StudentRecord, StudentRecord, Boolean>> =
+    this.zip(other).map { (s1, s2) -> Triple(s1, s2, comparator(s1, s2)) }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DEMONSTRATION: Shows all lambda patterns in action
+// ─────────────────────────────────────────────────────────────────────────────
+
 fun List<StudentRecord>.demonstrateHigherOrderFunctions() {
-    // Lambda: filter passing students and mark them
+    // LAMBDA #1 demo: processWithRule (filter + map)
     val passedStudents = this.processWithRule(
         rule = { it.finalScore >= 40 },
         transformer = { it.copy(grade = "PASS") }
     )
-    println("Passed students: ${passedStudents.map { it.name }}")
+    println("✓ Passed students: ${passedStudents.map { it.name }}")
 
-    // Collection operations chained
-    val topPerformers = this
-        .filter { it.finalScore > 70 }
-        .sortedByDescending { it.finalScore }
-    topPerformers.forEach { println("Top: ${it.name} - ${it.finalScore}") }
+    // LAMBDA #2 demo: calculatePassRate (count)
+    val passRate = this.calculatePassRate()
+    println("✓ Pass rate: ${"%.1f".format(passRate)}%")
 
-    // Pass rate
-    println("Pass rate: ${"%.1f".format(this.calculatePassRate())}%")
+    // LAMBDA #3 demo: topPerformers (sortedByDescending)
+    val topThree = this.topPerformers(3)
+    println("✓ Top performers: ${topThree.map { it.name }}")
+
+    // LAMBDA #9 demo: filterAndEnrich (enricher function)
+    val enriched = this.filterAndEnrich(
+        predicate = { it.finalScore >= 70 },
+        enricher = { s -> s to "(High Performer)" }
+    )
+    println("✓ Enriched: ${enriched.take(2)}")
+
+    // LAMBDA #12 demo: conditionalAggregate (fold)
+    val totalPass = this.conditionalAggregate(
+        condition = { it.hasPassed() },
+        aggregator = { acc, s -> acc + s.finalScore }
+    )
+    println("✓ Total passing scores: ${"%.1f".format(totalPass)}")
+
+    // LAMBDA #14 demo: scoreDistribution (groupBy)
+    val distrib = this.scoreDistribution { student ->
+        when {
+            student.finalScore >= 70 -> "High (70+)"
+            student.finalScore >= 50 -> "Medium (50-69)"
+            else -> "Low (<50)"
+        }
+    }
+    println("✓ Distribution: ${distrib.mapValues { (_, v) -> v.size }}")
 }
 
 fun demonstrateHigherOrderFunctions() {
